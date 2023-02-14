@@ -1,0 +1,14 @@
+#Comments use #s.
+#directivesw = assembler commands and they begin with a dot "."
+#labels = text:
+#instructions= mnemonic operand(s)
+
+#Use a directive to enter teh text mode and create main label
+.text
+#label	mnomic	opperands		comment
+main:	li		t0,1			#psuedo instruction R[rd]=imm
+								#t0=1
+                                #generic format operands are rd, rs1, rs2
+loop:	addi	t0,t0,1			#R[rd]=R[rs1]=R[rs2] t0=t0+1
+		j		loop			#psuedo instruction. PC=imm
+        #or to stop it, you can use the stop button on the actual line of code in the current and next.
