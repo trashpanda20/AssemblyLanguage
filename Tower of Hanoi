@@ -1,0 +1,131 @@
+.data
+	.align 2
+		pega:	.string "A"
+		pegb:	.string "B"
+		pegc:	.string "C"
+		to:		.string " to "
+		nl:		.byte 10, 0 			#"\n" - due to a bug, we have to manually enter ASCII. 
+		count:	.word 0
+    	msg1:	.string	"Please enter the number of rings you'd like to use: "
+		msg2:	.string	"Try again. The number is too low."
+		msg3:	.string	"Try again. The number is too high."
+        tall:	.string ")."
+
+    
+.text
+main:	
+        la		a0,msg1			#printing
+   		li 		a7,4
+    	ecall
+        la		a0,nl
+        ecall
+        
+        li 		a7,5			#reading
+    	ecall
+        add t0 a0,zero
+        
+        li		t0,3			#if n<3
+		blt		a0,t0,mvless
+        
+        li		t0,10
+        bge		a0,t0,mvgreat	#if n>=10
+
+		la		a1,pega			#
+        la		a2,pegc			#
+        la		a3,pegb			#
+        jal		ra,move			#
+
+		li		a7,10			#exit
+        ecall					#
+
+
+# move(n, src, dest, spare)
+#   n	 	(a0): numbver of disks to move
+#   src		(a1): address fo the src label
+#	dest	(a2): address of the dest label
+#	spare	(a3): address of the spare label
+move:	
+		addi	sp,sp,-8			#making  room for top of the stack frame
+		sw		ra,4(sp)			#pushs the return on to the stack
+        sw		fp,0(sp)			#push fp
+        mv		fp,sp				#preserving sp		
+        
+		li		t0,1				# if n/=1, recurse
+		bne		a0,t0,mvrec			#
+
+		la		t2,count            #now we're adding numbers to list.
+        lw		a0,0(t2)            #it's a loop
+        addi	a0,a0,1             #
+        sw		a0,0(t2)            #
+        li		a7,1                #
+        ecall                       #printing
+        
+        la		a0,tall				#adding ")."
+        li		a7,4				#
+        ecall						#
+        
+        li		a7,4				#system call for a7
+        
+        mv		a0,a1				#print a1(src)
+        ecall						#
+        la		a0,to				#print to
+        ecall						#
+        mv		a0,a2				#print a2(dest)
+        ecall						#
+        la		a0,nl				#new line
+        ecall
+        
+        beq		zero,zero,leave		#returning to the caller
+ 
+ 
+mvgreat:la 		a0 msg3             #naming the message of too high of a number
+    	li 		a7 4                #
+    	ecall                       #and how it's called and printed
+        la		a0,nl               #we're just printing a blankl line
+        ecall                       #
+        jal		ra,main             #sending i back to main to play again
+        
+mvless:	la 		a0 msg2             #naming message of too low
+		li 		a7 4                #
+        ecall                       #printing
+        la		a0,nl               #printing new line
+        ecall                       #
+        jal		ra,main             #back to main
+
+ 
+mvrec:	addi	sp,sp,-16			#make room to store
+		sw		a0,0(sp)			#a0=0(sp)
+        sw		a1,4(sp)			#a1=4(sp)
+        sw		a2,8(sp)			#a2=8(sp)
+        sw		a3,12(sp)			#a3=12(sp)
+
+									#move(n-1, src, spare, dest)
+        addi	a0,a0,-1            #n-1
+        mv		t0,a2				#swap a3&a2
+        mv		a2,a3				#
+        mv		a3,t0				#
+        jal		ra,move             #call move
+                                    
+                                    #move(1, src, dest, spare)
+        li		a0,1				#
+        lw		a1,4(sp)			#n=1
+		lw		a2,8(sp)			#restore a1,a2,a3
+        lw		a3,12(sp)			#
+		jal		ra,move
+                                    
+                                    #move(n-1, spare, dest, src)
+        lw		a0,0(sp)			#restore a0
+		addi	a0,a0,-1			#
+        lw		a1,12(sp)			#
+        lw		a2,8(sp)			#
+        lw		a3,4(sp)			#
+        jal		ra,move				#call move
+        
+		beq		zero,zero,leave
+        
+leave:								#exit asubroutine and restore the stack
+		mv		sp,fp				#destroy teh local area of the stack
+        lw		ra,4(sp)			#pop ra
+        lw		fp,0(sp)			#pop fp
+        addi	sp,sp,8				#move the top of the frame
+        ret
